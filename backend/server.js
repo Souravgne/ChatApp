@@ -3,7 +3,6 @@ import express from 'express';
 import { Server } from 'socket.io';
 
 const app = express();
-
 const server = createServer(app);
 
 const io = new Server(server, {
@@ -12,40 +11,76 @@ const io = new Server(server, {
     },
 });
 
-const ROOM = 'group';
+const usersPerRoom = {}; // Track users per room
 
 io.on('connection', (socket) => {
-    console.log('a user connected', socket.id);
+    console.log('A user connected:', socket.id);
 
-    socket.on('joinRoom', async (userName) => {
-        console.log(`${userName} is joining the group.`);
+    socket.on('joinRoom', ({ userName, accessCode }) => {
+        console.log(`${userName} is joining room ${accessCode}`);
 
-        await socket.join(ROOM);
+        socket.join(accessCode);
+        socket.data.userName = userName;
+        socket.data.room = accessCode;
 
-        // send to all
-        // io.to(ROOM).emit('roomNotice', userName);
+        if (!usersPerRoom[accessCode]) {
+            usersPerRoom[accessCode] = [];
+        }
 
-        // broadcast
-        socket.to(ROOM).emit('roomNotice', userName);
+        if (!usersPerRoom[accessCode].includes(userName)) {
+            usersPerRoom[accessCode].push(userName);
+        }
+
+        socket.to(accessCode).emit('roomNotice', userName);
+
+        // Emit updated user list
+        io.to(accessCode).emit('roomUsers', usersPerRoom[accessCode]);
     });
 
+    // Chat messages
     socket.on('chatMessage', (msg) => {
-        socket.to(ROOM).emit('chatMessage', msg);
+        const room = socket.data.room;
+        if (room) {
+            socket.to(room).emit('chatMessage', msg);
+        }
     });
 
+    // Typing indicators
     socket.on('typing', (userName) => {
-        socket.to(ROOM).emit('typing', userName);
+        const room = socket.data.room;
+        if (room) {
+            socket.to(room).emit('typing', userName);
+        }
     });
 
     socket.on('stopTyping', (userName) => {
-        socket.to(ROOM).emit('stopTyping', userName);
+        const room = socket.data.room;
+        if (room) {
+            socket.to(room).emit('stopTyping', userName);
+        }
+    });
+
+    // Handle disconnect
+    socket.on('disconnect', () => {
+        const room = socket.data.room;
+        const userName = socket.data.userName;
+
+        if (room && usersPerRoom[room]) {
+            // Remove user from room
+            usersPerRoom[room] = usersPerRoom[room].filter((u) => u !== userName);
+
+            // Emit updated list
+            io.to(room).emit('roomUsers', usersPerRoom[room]);
+        }
+
+        console.log('User disconnected:', socket.id);
     });
 });
 
 app.get('/', (req, res) => {
-    res.send('<h1>Hello world</h1>');
+    res.send('<h1>Socket.IO Chat Server</h1>');
 });
 
 server.listen(4600, () => {
-    console.log('server running at http://localhost:4600');
+    console.log('Server running at http://localhost:4600');
 });
