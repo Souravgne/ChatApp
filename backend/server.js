@@ -1,86 +1,92 @@
-import { createServer } from 'node:http';
-import express from 'express';
-import { Server } from 'socket.io';
+// server.js
+import { createServer } from "node:http";
+import express from "express";
+import { Server } from "socket.io";
 
 const app = express();
 const server = createServer(app);
 
+/**
+ * IMPORTANT:
+ * - maxHttpBufferSize increased to allow reasonably large base64 payloads (adjust as needed).
+ * - cors: allow your frontend origin in production instead of "*".
+ */
 const io = new Server(server, {
-    cors: {
-        origin: '*',
-    },
+  cors: { origin: "*", methods: ["GET", "POST"] },
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  maxHttpBufferSize: 10 * 1024 * 1024, // 10 MB (adjust to your needs)
 });
 
-const usersPerRoom = {}; // Track users per room
+const usersPerRoom = {}; // { roomId: [userName] }
+const socketsMeta = {}; // { socketId: { userName, room } }
 
-io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
+io.on("connection", (socket) => {
+  console.log("A user connected:", socket.id);
 
-    socket.on('joinRoom', ({ userName, accessCode }) => {
-        console.log(`${userName} is joining room ${accessCode}`);
+  socket.on("joinRoom", ({ userName, accessCode }) => {
+    if (!userName || !accessCode) return;
 
-        socket.join(accessCode);
-        socket.data.userName = userName;
-        socket.data.room = accessCode;
+    console.log(
+      `${userName} is joining room ${accessCode} (socket: ${socket.id})`
+    );
 
-        if (!usersPerRoom[accessCode]) {
-            usersPerRoom[accessCode] = [];
-        }
+    socket.join(accessCode);
+    socket.data.userName = userName;
+    socket.data.room = accessCode;
 
-        if (!usersPerRoom[accessCode].includes(userName)) {
-            usersPerRoom[accessCode].push(userName);
-        }
+    socketsMeta[socket.id] = { userName, room: accessCode };
 
-        socket.to(accessCode).emit('roomNotice', userName);
+    if (!usersPerRoom[accessCode]) usersPerRoom[accessCode] = [];
 
-        // Emit updated user list
-        io.to(accessCode).emit('roomUsers', usersPerRoom[accessCode]);
-    });
+    if (!usersPerRoom[accessCode].includes(userName)) {
+      usersPerRoom[accessCode].push(userName);
+    }
 
-    // Chat messages
-    socket.on('chatMessage', (msg) => {
-        const room = socket.data.room;
-        if (room) {
-            socket.to(room).emit('chatMessage', msg);
-        }
-    });
+    // Notify others in room that someone joined
+    socket.to(accessCode).emit("roomNotice", userName);
 
-    // Typing indicators
-    socket.on('typing', (userName) => {
-        const room = socket.data.room;
-        if (room) {
-            socket.to(room).emit('typing', userName);
-        }
-    });
+    // Emit updated user list to everyone in the room
+    io.to(accessCode).emit("roomUsers", usersPerRoom[accessCode]);
+  });
 
-    socket.on('stopTyping', (userName) => {
-        const room = socket.data.room;
-        if (room) {
-            socket.to(room).emit('stopTyping', userName);
-        }
-    });
+  socket.on("chatMessage", (msg) => {
+    const room = socket.data.room;
+    if (room) {
+      // emit to everyone else in the room
+      socket.to(room).emit("chatMessage", msg);
+    }
+  });
 
-    // Handle disconnect
-    socket.on('disconnect', () => {
-        const room = socket.data.room;
-        const userName = socket.data.userName;
+  socket.on("typing", (userName) => {
+    const room = socket.data.room;
+    if (room) socket.to(room).emit("typing", userName);
+  });
 
-        if (room && usersPerRoom[room]) {
-            // Remove user from room
-            usersPerRoom[room] = usersPerRoom[room].filter((u) => u !== userName);
+  socket.on("stopTyping", (userName) => {
+    const room = socket.data.room;
+    if (room) socket.to(room).emit("stopTyping", userName);
+  });
 
-            // Emit updated list
-            io.to(room).emit('roomUsers', usersPerRoom[room]);
-        }
+  socket.on("disconnect", (reason) => {
+    const meta = socketsMeta[socket.id];
+    if (meta && meta.room && usersPerRoom[meta.room]) {
+      usersPerRoom[meta.room] = usersPerRoom[meta.room].filter(
+        (u) => u !== meta.userName
+      );
+      io.to(meta.room).emit("roomUsers", usersPerRoom[meta.room]);
+    }
 
-        console.log('User disconnected:', socket.id);
-    });
+    delete socketsMeta[socket.id];
+    console.log(`User disconnected: ${socket.id} (${reason})`);
+  });
 });
 
-app.get('/', (req, res) => {
-    res.send('<h1>Socket.IO Chat Server</h1>');
+app.get("/", (req, res) => {
+  res.send("<h1>Socket.IO Chat Server</h1>");
 });
 
-server.listen(4600, () => {
-    console.log('Server running at http://localhost:4600');
+const PORT = process.env.PORT || 4600;
+server.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
 });
