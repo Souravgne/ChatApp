@@ -1,0 +1,24 @@
+FROM oven/bun AS build
+# --- Build
+WORKDIR /app
+COPY package.json package.json
+COPY bun.lock bun.lock
+RUN bun ci
+COPY ./server.js ./server.js
+
+ENV NODE_ENV=4600
+RUN bun build \
+    --compile \
+    --minify \
+    --target bun \
+    --outfile server \
+    ./server.js
+# --- build complete ---
+
+# --- Deploy ---
+FROM gcr.io/distroless/base
+WORKDIR /app
+COPY --from=build /app/server server
+ENV NODE_ENV=production
+CMD ["./server"]
+EXPOSE 4600
