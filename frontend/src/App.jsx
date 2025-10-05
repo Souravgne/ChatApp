@@ -150,7 +150,6 @@ export default function App() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // enforce same limits on client as server; adjust limit if server maxHttpBufferSize changed
     if (file.size > 2 * 1024 * 1024) {
       toast.error("File too large (max 2MB)");
       return;
@@ -169,12 +168,11 @@ export default function App() {
         file: {
           name: file.name,
           type: file.type,
-          data: reader.result, // base64 string
+          data: reader.result,
         },
       };
       setMessages((m) => [...m, fileMsg]);
 
-      // emit using existing socket instance (singleton)
       if (socket.current) {
         socket.current.emit("chatMessage", fileMsg);
       } else {

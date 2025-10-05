@@ -6,20 +6,15 @@ import { Server } from "socket.io";
 const app = express();
 const server = createServer(app);
 
-/**
- * IMPORTANT:
- * - maxHttpBufferSize increased to allow reasonably large base64 payloads (adjust as needed).
- * - cors: allow your frontend origin in production instead of "*".
- */
 const io = new Server(server, {
   cors: { origin: "*", methods: ["GET", "POST"] },
   pingTimeout: 60000,
   pingInterval: 25000,
-  maxHttpBufferSize: 10 * 1024 * 1024, // 10 MB (adjust to your needs)
+  maxHttpBufferSize: 10 * 1024 * 1024,
 });
 
-const usersPerRoom = {}; // { roomId: [userName] }
-const socketsMeta = {}; // { socketId: { userName, room } }
+const usersPerRoom = {};
+const socketsMeta = {};
 
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
@@ -81,11 +76,6 @@ io.on("connection", (socket) => {
     console.log(`User disconnected: ${socket.id} (${reason})`);
   });
 });
-
-app.get("/", (req, res) => {
-  res.send("<h1>Socket.IO Chat Server</h1>");
-});
-
 const PORT = process.env.PORT || 4600;
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
