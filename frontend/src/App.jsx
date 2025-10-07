@@ -279,60 +279,93 @@ export default function App() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-zinc-100 flex flex-col">
-            {messages.map((m) => {
-              const mine = m.sender === userName;
-              return (
-                <div
-                  key={m.id}
-                  className={`flex ${mine ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[78%] p-3 my-2 rounded-[18px] text-sm leading-5 shadow-sm ${
-                      mine
-                        ? "bg-[#DCF8C6] text-[#303030] rounded-br-2xl"
-                        : "bg-white text-[#303030] rounded-bl-2xl"
-                    }`}
-                  >
-                    {/* TEXT Message */}
-                    {m.text && (
-                      <div className="break-words whitespace-pre-wrap">
-                        {m.text}
-                      </div>
-                    )}
+         <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-zinc-100 flex flex-col">
+  {messages.map((m) => {
+    const mine = m.sender === userName;
+    const isRead = m.isRead;
 
-                    {/* FILE Message */}
-                    {m.file && (
-                      <div>
-                        {m.file.type.startsWith("image/") ? (
-                          <img
-                            src={m.file.data}
-                            alt={m.file.name}
-                            className="rounded-md max-w-xs max-h-64"
-                          />
-                        ) : (
-                          <a
-                            href={m.file.data}
-                            download={m.file.name}
-                            className="text-blue-600 underline"
-                          >
-                            Download {m.file.name}
-                          </a>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="flex justify-between items-center mt-1 gap-16">
-                      <div className="text-[11px] font-bold">{m.sender}</div>
-                      <div className="text-[11px] text-gray-500 text-right">
-                        {formatTime(m.ts)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+    return (
+      <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+        <div
+          className={`max-w-[78%] p-3 my-2 rounded-[18px] text-sm leading-5 shadow-sm ${
+            mine
+              ? "bg-[#DCF8C6] text-[#303030] rounded-br-2xl"
+              : "bg-white text-[#303030] rounded-bl-2xl"
+          }`}
+        >
+          {/* Sender Name */}
+          <div className="font-medium text-[#9d0067] mb-1">
+            {!mine && m.sender}
           </div>
+
+          {/* TEXT Message */}
+          {m.text && (
+            <div className="break-words whitespace-pre-wrap min-w-24">{m.text}</div>
+          )}
+
+          {/* FILE Message Handling */}
+          {m.file && (
+            <div className="mt-2">
+              {m.file.type.startsWith("image/") ? (
+                // For images: Show them inline
+                <div className="relative">
+                  <img
+                    src={m.file.data}
+                    alt={m.file.name}
+                    className="rounded-md max-w-xs max-h-64"
+                  />
+                </div>
+              ) : m.file.type === "application/pdf" ? (
+                // For PDFs: Show preview with a fallback download link
+                <div>
+                  <iframe
+                    src={m.file.data}
+                    title="PDF Preview"
+                    width="100%"
+                    height="400"
+                    className="border rounded-md"
+                  />
+                </div>
+              ) : (
+                // For other files: Handle download
+                ''
+              )}
+            </div>
+          )}
+
+          {/* Timestamp and download icon aligned */}
+          <div className="flex justify-between items-center mt-1 gap-2">
+            {/* Timestamp on the left side */}
+            <div className="text-[11px] text-gray-500">
+              {formatTime(m.ts)}
+            </div>
+
+            {/* Only show download icon if file exists */}
+            {m.file && (
+              <a
+                href={m.file?.data}
+                download={m.file?.name}
+                className="flex items-center gap-1"
+              >
+                <img
+                  src="/download.png"
+                  alt="Download"
+                  className="w-5 h-5 inline-block"
+                />
+              </a>
+            )}
+          </div>
+
+          {/* Blue Tick - Visible only if not sender and message is read */}
+          {!mine && isRead && (
+            <div className="text-blue-500 text-xs mt-1">✓✓</div>
+          )}
+        </div>
+      </div>
+    );
+  })}
+</div>
+
 
           {/* Input */}
           <div className="px-4 py-3 border-t border-gray-200 bg-white">
@@ -371,3 +404,4 @@ export default function App() {
     </div>
   );
 }
+                     
