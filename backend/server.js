@@ -8,8 +8,8 @@ const server = createServer(app);
 
 const io = new Server(server, {
   cors: { origin: "*", methods: ["GET", "POST"] },
-  pingTimeout: 60000,
-  pingInterval: 25000,
+  pingTimeout: 0,
+  pingInterval: 0,
   maxHttpBufferSize: 10 * 1024 * 1024,
 });
 
