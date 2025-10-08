@@ -6,7 +6,7 @@ let socketInstance = null;
 export function connectWS() {
   if (socketInstance) return socketInstance;
 
-  socketInstance = io("https://chat-api.00004000.xyz", {
+  socketInstance = io("http://localhost:4600", {
     transports: ["websocket"], // avoid polling reconnection quirks
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,

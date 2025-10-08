@@ -8,9 +8,9 @@ const server = createServer(app);
 
 const io = new Server(server, {
   cors: { origin: "*", methods: ["GET", "POST"] },
-  pingTimeout: 0,
-  pingInterval: 0,
-  maxHttpBufferSize: 10 * 1024 * 1024,
+  pingTimeout: 600000, // 10 minutes
+  pingInterval: 60000, // Send a ping every 1 minute
+  maxHttpBufferSize: 10 * 1024 * 1024, // 10 MB
 });
 
 const usersPerRoom = {};
@@ -75,6 +75,8 @@ io.on("connection", (socket) => {
     delete socketsMeta[socket.id];
     console.log(`User disconnected: ${socket.id} (${reason})`);
   });
+
+  
 });
 const PORT = process.env.PORT || 4600;
 server.listen(PORT, () => {

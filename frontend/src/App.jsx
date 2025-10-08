@@ -78,6 +78,7 @@ export default function App() {
     }, 1000);
 
     return () => clearTimeout(timer.current);
+    
   }, [text, userName]);
 
   function formatTime(ts) {
@@ -334,32 +335,35 @@ export default function App() {
           )}
 
           {/* Timestamp and download icon aligned */}
-          <div className="flex justify-between items-center mt-1 gap-2">
-            {/* Timestamp on the left side */}
+         <div className="w-full flex justify-between items-end mt-1">
             <div className="text-[11px] text-gray-500">
               {formatTime(m.ts)}
             </div>
 
-            {/* Only show download icon if file exists */}
-            {m.file && (
-              <a
-                href={m.file?.data}
-                download={m.file?.name}
-                className="flex items-center gap-1"
-              >
+            {/* Right: Download icon and read tick */}
+            <div className="flex items-center gap-2">
+              {m.file && (
+                <a
+                  href={m.file?.data}
+                  download={m.file?.name}
+                  className="flex items-center gap-1"
+                >
+                  <img
+                    src="/download.png"
+                    alt="Download"
+                    className="w-5 h-5 inline-block"
+                  />
+                </a>
+              )}
+             {mine && ( <div className="text-blue-500 text-xs mt-1">
                 <img
-                  src="/download.png"
-                  alt="Download"
+                  src="/tick.png"
+                  alt="read"
                   className="w-5 h-5 inline-block"
                 />
-              </a>
-            )}
-          </div>
-
-          {/* Blue Tick - Visible only if not sender and message is read */}
-          {!mine && isRead && (
-            <div className="text-blue-500 text-xs mt-1">✓✓</div>
-          )}
+              </div>)}
+            </div>
+          </div>          
         </div>
       </div>
     );
