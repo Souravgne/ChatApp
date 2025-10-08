@@ -14,11 +14,15 @@ export default function App() {
   const [formError, setFormError] = useState("");
   const [usersInRoom, setUsersInRoom] = useState([]);
   const fileInputRef = useRef(null);
+  const bottomRef = useRef(null);
+
 
   const [showNamePopup, setShowNamePopup] = useState(true);
   const [typers, setTypers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
+
+  
 
   useEffect(() => {
     socket.current = connectWS();
@@ -81,6 +85,11 @@ export default function App() {
     
   }, [text, userName]);
 
+  useEffect(() => {
+  if (bottomRef.current) {
+    bottomRef.current.scrollIntoView({ behavior: "smooth" });
+  }
+}, [messages]);
   function formatTime(ts) {
     const d = new Date(ts);
     const hh = String(d.getHours()).padStart(2, "0");
@@ -365,7 +374,8 @@ export default function App() {
             </div>
           </div>          
         </div>
-      </div>
+      <div ref={bottomRef} /> </div>
+      
     );
   })}
 </div>
