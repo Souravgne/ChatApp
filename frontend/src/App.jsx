@@ -257,12 +257,18 @@ export default function App() {
                 </div>
               )}
             </div>
-            <div className="text-sm text-gray-500">
-              Signed in as{" "}
-              <span className="font-medium text-[#303030] capitalize">
-                {userName}
-              </span>
-            </div>
+            <div className="flex items-center gap-4 text-sm text-gray-500">
+  <div className="bg-gray-200 px-3 py-1 rounded-full text-xs font-medium text-gray-700">
+    Room ID: <span className="text-[#303030]">{accessCode}</span>
+  </div>
+  <div>
+    Signed in as{" "}
+    <span className="font-medium text-[#303030] capitalize">
+      {userName}
+    </span>
+  </div>
+</div>
+
           </div>
 
           {/* Members List */}
