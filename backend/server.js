@@ -4,6 +4,16 @@ import express from "express";
 import { Server } from "socket.io";
 
 const app = express();
+
+/**
+ * ✅ NEW: Health check endpoint
+ * Docker healthcheck calls: http://127.0.0.1:4600/health
+ * Must return HTTP 200
+ */
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 const server = createServer(app);
 
 const io = new Server(server, {
@@ -38,17 +48,13 @@ io.on("connection", (socket) => {
       usersPerRoom[accessCode].push(userName);
     }
 
-    // Notify others in room that someone joined
     socket.to(accessCode).emit("roomNotice", userName);
-
-    // Emit updated user list to everyone in the room
     io.to(accessCode).emit("roomUsers", usersPerRoom[accessCode]);
   });
 
   socket.on("chatMessage", (msg) => {
     const room = socket.data.room;
     if (room) {
-      // emit to everyone else in the room
       socket.to(room).emit("chatMessage", msg);
     }
   });
@@ -75,9 +81,8 @@ io.on("connection", (socket) => {
     delete socketsMeta[socket.id];
     console.log(`User disconnected: ${socket.id} (${reason})`);
   });
-
-  
 });
+
 const PORT = process.env.PORT || 4600;
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
